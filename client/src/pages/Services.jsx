@@ -119,7 +119,15 @@ export default function Services() {
                     <td>{s.category}</td>
                     <td>{s.location || "—"}</td>
                     <td>{formatMoney(s.price)}</td>
-                    <td className="muted">{s.provider?.name || "—"}</td>
+                    <td>
+                      {s.provider?.id ? (
+                        <Link className="muted" style={{ textDecoration: "underline" }} to={`/providers/${s.provider.id}`}>
+                          {s.provider.name}
+                        </Link>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
                     <td style={{ width: 120 }}>
                       <Link className="btn" to={`/book?providerId=${encodeURIComponent(s.provider?.id || "")}&serviceId=${encodeURIComponent(s.id)}`}>
                         Book
