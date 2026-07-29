@@ -1,6 +1,9 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import { User } from "../models/User.js";
+import { Review } from "../models/Review.js";
+import { Notification } from "../models/Notification.js";
+import { AdminAction } from "../models/AdminAction.js";
 import { requireAdmin, requireAuth } from "../middleware/auth.js";
 
 export const adminRouter = Router();
@@ -79,4 +82,74 @@ adminRouter.patch("/users/:id", requireAuth, requireAdmin, async (req, res) => {
   });
 });
 
- 
+adminRouter.get("/reviews", requireAuth, requireAdmin, async (req, res) => {
+  const page = Math.max(1, Number.parseInt(req.query.page ?? "1", 10) || 1);
+  const limit = Math.min(50, Math.max(1, Number.parseInt(req.query.limit ?? "10", 10) || 10));
+
+  const provider = String(req.query.provider ?? "").trim();
+  const reviewer = String(req.query.reviewer ?? "").trim();
+  const ratingRaw = String(req.query.rating ?? "").trim();
+
+  const filter = {};
+  if (provider) {
+    if (!mongoose.Types.ObjectId.isValid(provider)) return res.status(400).json({ message: "Invalid provider id" });
+    filter.provider = provider;
+  }
+  if (reviewer) {
+    if (!mongoose.Types.ObjectId.isValid(reviewer)) return res.status(400).json({ message: "Invalid reviewer id" });
+    filter.resident = reviewer;
+  }
+  if (ratingRaw) {
+    const rating = Number.parseInt(ratingRaw, 10);
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) return res.status(400).json({ message: "Invalid rating" });
+    filter.rating = rating;
+  }
+
+  const [total, reviews] = await Promise.all([
+    Review.countDocuments(filter),
+    Review.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate("provider", "name email")
+      .populate("resident", "name email")
+  ]);
+
+  res.json({
+    page,
+    limit,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+    reviews: reviews.map((r) => ({
+      id: r._id,
+      provider: { id: r.provider?._id, name: r.provider?.name || "", email: r.provider?.email || "" },
+      reviewer: { id: r.resident?._id, name: r.resident?.name || "", email: r.resident?.email || "" },
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: r.createdAt
+    }))
+  });
+});
+
+adminRouter.delete("/reviews/:id", requireAuth, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: "Invalid review id" });
+
+  const review = await Review.findById(id);
+  if (!review) return res.status(404).json({ message: "Review not found" });
+
+  await Promise.all([
+    Review.deleteOne({ _id: id }),
+    Notification.deleteMany({ review: id }),
+    AdminAction.create({
+      admin: req.user._id,
+      action: "delete_review",
+      review: review._id,
+      provider: review.provider,
+      resident: review.resident,
+      meta: { rating: review.rating, comment: review.comment }
+    })
+  ]);
+
+  res.json({ ok: true });
+});

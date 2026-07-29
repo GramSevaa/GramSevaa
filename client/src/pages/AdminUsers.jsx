@@ -134,9 +134,14 @@ export default function AdminUsers() {
               Signed in as {me.email} • Total users: {total}
             </div>
           </div>
-          <button className="btn secondary" type="button" onClick={logout}>
-            Logout
-          </button>
+          <div className="row">
+            <Link className="btn secondary" to="/admin/reviews">
+              Reviews
+            </Link>
+            <button className="btn secondary" type="button" onClick={logout}>
+              Logout
+            </button>
+          </div>
         </div>
 
         <div className="row space">
@@ -244,4 +249,3 @@ export default function AdminUsers() {
     </div>
   );
 }
-

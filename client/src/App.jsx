@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
+import AdminReviews from "./pages/AdminReviews";
 import AdminUsers from "./pages/AdminUsers";
 import Login from "./pages/Login";
 import ProviderProfile from "./pages/ProviderProfile";
@@ -19,6 +20,7 @@ export default function App() {
       <Route path="/providers/:id" element={<ProviderProfile />} />
       <Route path="/provider/services" element={<ProviderServices />} />
       <Route path="/admin/users" element={<AdminUsers />} />
+      <Route path="/admin/reviews" element={<AdminReviews />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
