@@ -12,6 +12,11 @@ export default function ProviderServices() {
   const [meError, setMeError] = useState("");
   const [loadingMe, setLoadingMe] = useState(true);
 
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [notificationsError, setNotificationsError] = useState("");
+
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -44,6 +49,20 @@ export default function ProviderServices() {
     };
   }, []);
 
+  async function loadNotifications() {
+    setLoadingNotifications(true);
+    setNotificationsError("");
+    try {
+      const data = await apiFetch("/api/notifications");
+      setNotifications(data.notifications || []);
+      setUnreadCount(Number(data.unreadCount || 0));
+    } catch (err) {
+      setNotificationsError(err.message || "Failed to load notifications");
+    } finally {
+      setLoadingNotifications(false);
+    }
+  }
+
   async function loadServices() {
     setLoading(true);
     setError("");
@@ -59,8 +78,25 @@ export default function ProviderServices() {
 
   useEffect(() => {
     if (!me || me.role !== "provider") return;
+    loadNotifications();
     loadServices();
   }, [me]);
+
+  async function markNotificationRead(n) {
+    try {
+      const data = await apiFetch(`/api/notifications/${n.id}/read`, { method: "PATCH" });
+      const readAt = data.notification?.readAt || new Date().toISOString();
+      setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, readAt } : x)));
+      if (!n.readAt) setUnreadCount((c) => Math.max(0, c - 1));
+    } catch (err) {
+      setNotificationsError(err.message || "Failed to mark notification as read");
+    }
+  }
+
+  async function viewReviewNotification(n) {
+    if (!n.readAt) await markNotificationRead(n);
+    if (me?.id) navigate(`/providers/${me.id}`);
+  }
 
   async function createService(e) {
     e.preventDefault();
@@ -146,6 +182,54 @@ export default function ProviderServices() {
             <button className="btn secondary" type="button" onClick={logout}>
               Logout
             </button>
+          </div>
+        </div>
+
+        <div className="stack">
+          <div className="row space">
+            <div className="muted small">Notifications{unreadCount > 0 ? ` (Unread: ${unreadCount})` : ""}</div>
+            <button className="btn secondary" type="button" onClick={loadNotifications} disabled={loadingNotifications}>
+              {loadingNotifications ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+
+          {notificationsError ? <div className="error">{notificationsError}</div> : null}
+
+          <div className="tableWrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Reviewer</th>
+                  <th>Rating</th>
+                  <th>When</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {notifications.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="muted">
+                      No notifications
+                    </td>
+                  </tr>
+                ) : (
+                  notifications.map((n) => (
+                    <tr key={n.id}>
+                      <td>{n.reviewerName || "Anonymous"}</td>
+                      <td>{n.rating ? `${n.rating} / 5` : "—"}</td>
+                      <td>{n.createdAt ? new Date(n.createdAt).toLocaleString() : "—"}</td>
+                      <td>{n.readAt ? "Read" : "New"}</td>
+                      <td style={{ textAlign: "right" }}>
+                        <button className="btn secondary" type="button" onClick={() => viewReviewNotification(n)}>
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -237,4 +321,3 @@ export default function ProviderServices() {
     </div>
   );
 }
-

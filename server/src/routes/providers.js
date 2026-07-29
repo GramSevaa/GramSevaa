@@ -2,6 +2,8 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { User } from "../models/User.js";
 import { Review } from "../models/Review.js";
+import { Notification } from "../models/Notification.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
 
 export const providersRouter = Router();
 
@@ -58,4 +60,46 @@ providersRouter.get("/:id/reviews", async (req, res) => {
       createdAt: r.createdAt
     }))
   });
+});
+
+providersRouter.post("/:id/reviews", requireAuth, requireRole("resident"), async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: "Invalid provider id" });
+
+  const provider = await User.findOne({ _id: id, role: "provider" }).select("_id isActive");
+  if (!provider || !provider.isActive) return res.status(404).json({ message: "Provider not found" });
+
+  const rating = Number(req.body?.rating);
+  const comment = String(req.body?.comment ?? "").trim();
+  if (!Number.isFinite(rating) || rating < 1 || rating > 5) return res.status(400).json({ message: "Invalid rating" });
+
+  try {
+    const review = await Review.create({
+      provider: id,
+      resident: req.user._id,
+      rating,
+      comment
+    });
+
+    await Notification.create({
+      provider: id,
+      type: "review",
+      review: review._id,
+      reviewerName: req.user?.name || "Anonymous",
+      rating: review.rating
+    });
+
+    res.status(201).json({
+      review: {
+        id: review._id,
+        reviewerName: req.user?.name || "Anonymous",
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.createdAt
+      }
+    });
+  } catch (err) {
+    if (err?.code === 11000) return res.status(409).json({ message: "You already reviewed this provider" });
+    throw err;
+  }
 });
