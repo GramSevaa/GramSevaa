@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import ProviderServices from "./pages/ProviderServices";
 import Register from "./pages/Register";
 import Services from "./pages/Services";
+import Book from "./pages/Book";
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/services" element={<Services />} />
+      <Route path="/book" element={<Book />} />
       <Route path="/provider/services" element={<ProviderServices />} />
       <Route path="/admin/users" element={<AdminUsers />} />
       <Route path="*" element={<Navigate to="/" replace />} />

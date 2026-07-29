@@ -34,7 +34,7 @@ export default function Login() {
   return (
     <div className="page">
       <div className="card">
-        <h1>Admin Login</h1>
+        <h1>Login</h1>
         <form onSubmit={onSubmit} className="stack">
           <label className="field">
             <span>Email</span>
@@ -49,9 +49,7 @@ export default function Login() {
             {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
-        <div className="muted small">
-          Use the seeded admin from server .env (SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD).
-        </div>
+        <div className="muted small">Use your email/password (admin/provider/resident).</div>
         <div className="muted small" style={{ marginTop: 10 }}>
           New user? <Link to="/register">Create account</Link>
         </div>

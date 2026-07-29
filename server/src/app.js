@@ -3,6 +3,8 @@ import cors from "cors";
 import { authRouter } from "./routes/auth.js";
 import { adminRouter } from "./routes/admin.js";
 import { servicesRouter } from "./routes/services.js";
+import { providersRouter } from "./routes/providers.js";
+import { bookingsRouter } from "./routes/bookings.js";
 
 export function createApp() {
   const app = express();
@@ -18,6 +20,8 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/services", servicesRouter);
+  app.use("/api/providers", providersRouter);
+  app.use("/api/bookings", bookingsRouter);
 
   app.use((err, _req, res, _next) => {
     const status = Number.isInteger(err?.status) ? err.status : 500;

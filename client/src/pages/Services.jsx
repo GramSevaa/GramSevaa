@@ -93,18 +93,19 @@ export default function Services() {
                 <th>Location</th>
                 <th>Price</th>
                 <th>Provider</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="muted">
+                  <td colSpan={6} className="muted">
                     Loading...
                   </td>
                 </tr>
               ) : services.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="muted">
+                  <td colSpan={6} className="muted">
                     No services found
                   </td>
                 </tr>
@@ -119,6 +120,11 @@ export default function Services() {
                     <td>{s.location || "—"}</td>
                     <td>{formatMoney(s.price)}</td>
                     <td className="muted">{s.provider?.name || "—"}</td>
+                    <td style={{ width: 120 }}>
+                      <Link className="btn" to={`/book?providerId=${encodeURIComponent(s.provider?.id || "")}&serviceId=${encodeURIComponent(s.id)}`}>
+                        Book
+                      </Link>
+                    </td>
                   </tr>
                 ))
               )}
@@ -129,4 +135,3 @@ export default function Services() {
     </div>
   );
 }
-
