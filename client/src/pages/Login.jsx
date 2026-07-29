@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import { setToken } from "../lib/auth";
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectTo = useMemo(() => location.state?.redirectTo || "/admin/users", [location.state]);
+  const redirectTo = useMemo(() => location.state?.redirectTo || "/services", [location.state]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,8 +52,10 @@ export default function Login() {
         <div className="muted small">
           Use the seeded admin from server .env (SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD).
         </div>
+        <div className="muted small" style={{ marginTop: 10 }}>
+          New user? <Link to="/register">Create account</Link>
+        </div>
       </div>
     </div>
   );
 }
-

@@ -1,0 +1,132 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { apiFetch } from "../lib/api";
+
+function formatMoney(value) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n)) return "";
+  return n <= 0 ? "—" : `₹${n}`;
+}
+
+export default function Services() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [services, setServices] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      setLoading(true);
+      setError("");
+      try {
+        const params = new URLSearchParams();
+        params.set("page", String(page));
+        params.set("limit", String(limit));
+        if (search.trim()) params.set("search", search.trim());
+        const data = await apiFetch(`/api/services?${params.toString()}`);
+        if (cancelled) return;
+        setServices(data.services || []);
+        setTotalPages(data.totalPages || 1);
+      } catch (err) {
+        if (!cancelled) setError(err.message || "Failed to load services");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [page, search]);
+
+  return (
+    <div className="page">
+      <div className="card stack">
+        <div className="row space">
+          <h1>Find Services</h1>
+          <div className="row">
+            <Link className="btn secondary" to="/register">
+              Register
+            </Link>
+            <Link className="btn secondary" to="/login">
+              Login
+            </Link>
+          </div>
+        </div>
+
+        <div className="row space">
+          <input
+            className="input"
+            value={search}
+            onChange={(e) => {
+              setPage(1);
+              setSearch(e.target.value);
+            }}
+            placeholder="Search services (title, category, location)"
+          />
+          <div className="row">
+            <button className="btn secondary" type="button" disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              Prev
+            </button>
+            <div className="pill">
+              Page {page} / {totalPages}
+            </div>
+            <button className="btn secondary" type="button" disabled={page >= totalPages || loading} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+              Next
+            </button>
+          </div>
+        </div>
+
+        {error ? <div className="error">{error}</div> : null}
+
+        <div className="tableWrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Service</th>
+                <th>Category</th>
+                <th>Location</th>
+                <th>Price</th>
+                <th>Provider</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    Loading...
+                  </td>
+                </tr>
+              ) : services.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No services found
+                  </td>
+                </tr>
+              ) : (
+                services.map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      <div>{s.title}</div>
+                      {s.description ? <div className="muted small">{s.description}</div> : null}
+                    </td>
+                    <td>{s.category}</td>
+                    <td>{s.location || "—"}</td>
+                    <td>{formatMoney(s.price)}</td>
+                    <td className="muted">{s.provider?.name || "—"}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
