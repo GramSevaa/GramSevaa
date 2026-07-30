@@ -19,6 +19,8 @@ function stars(rating) {
 export default function ProviderProfile() {
   const { id } = useParams();
 
+  const [me, setMe] = useState(null);
+
   const [provider, setProvider] = useState(null);
   const [averageRating, setAverageRating] = useState(null);
   const [reviewCount, setReviewCount] = useState(0);
@@ -26,6 +28,12 @@ export default function ProviderProfile() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [formRating, setFormRating] = useState("5");
+  const [formComment, setFormComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState("");
 
   const averageLabel = useMemo(() => {
     if (averageRating === null) return "No ratings yet";
@@ -35,15 +43,33 @@ export default function ProviderProfile() {
   useEffect(() => {
     let cancelled = false;
     async function run() {
+      try {
+        const data = await apiFetch("/api/auth/me");
+        if (!cancelled) setMe(data.user);
+      } catch {
+      }
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function loadProviderAndReviews(providerId) {
+    const [p, r] = await Promise.all([apiFetch(`/api/providers/${providerId}`), apiFetch(`/api/providers/${providerId}/reviews`)]);
+    setProvider(p.provider);
+    setAverageRating(r.averageRating);
+    setReviewCount(r.reviewCount || 0);
+    setReviews(r.reviews || []);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
       setLoading(true);
       setError("");
       try {
-        const [p, r] = await Promise.all([apiFetch(`/api/providers/${id}`), apiFetch(`/api/providers/${id}/reviews`)]);
-        if (cancelled) return;
-        setProvider(p.provider);
-        setAverageRating(r.averageRating);
-        setReviewCount(r.reviewCount || 0);
-        setReviews(r.reviews || []);
+        await loadProviderAndReviews(id);
       } catch (err) {
         if (!cancelled) setError(err.message || "Failed to load provider");
       } finally {
@@ -55,6 +81,27 @@ export default function ProviderProfile() {
       cancelled = true;
     };
   }, [id]);
+
+  async function submitReview(e) {
+    e.preventDefault();
+    setSubmitting(true);
+    setSubmitError("");
+    setSubmitSuccess("");
+    try {
+      const rating = Number(formRating);
+      await apiFetch(`/api/providers/${id}/reviews`, {
+        method: "POST",
+        body: JSON.stringify({ rating, comment: formComment })
+      });
+      setFormComment("");
+      setSubmitSuccess("Review submitted");
+      await loadProviderAndReviews(id);
+    } catch (err) {
+      setSubmitError(err.message || "Failed to submit review");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="page">
@@ -83,6 +130,33 @@ export default function ProviderProfile() {
               </div>
               <div className="muted small">Reviews: {reviewCount}</div>
             </div>
+
+            {me?.role === "resident" ? (
+              <form className="stack" onSubmit={submitReview}>
+                <div className="row" style={{ alignItems: "stretch" }}>
+                  <label className="field" style={{ width: 220 }}>
+                    <span>Rating</span>
+                    <select className="select" value={formRating} onChange={(e) => setFormRating(e.target.value)}>
+                      <option value="5">5</option>
+                      <option value="4">4</option>
+                      <option value="3">3</option>
+                      <option value="2">2</option>
+                      <option value="1">1</option>
+                    </select>
+                  </label>
+                  <label className="field" style={{ flex: 1 }}>
+                    <span>Comment</span>
+                    <input value={formComment} onChange={(e) => setFormComment(e.target.value)} placeholder="Write a short review" />
+                  </label>
+                </div>
+
+                {submitError ? <div className="error">{submitError}</div> : null}
+                {submitSuccess ? <div className="pill">{submitSuccess}</div> : null}
+                <button className="btn" type="submit" disabled={submitting}>
+                  {submitting ? "Submitting..." : "Submit review"}
+                </button>
+              </form>
+            ) : null}
 
             <div className="tableWrap">
               <table className="table">
@@ -122,4 +196,3 @@ export default function ProviderProfile() {
     </div>
   );
 }
-

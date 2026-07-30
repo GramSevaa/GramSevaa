@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
+import { clearToken } from "../lib/auth";
 
 function formatMoney(value) {
   const n = Number(value || 0);
@@ -9,6 +10,10 @@ function formatMoney(value) {
 }
 
 export default function Services() {
+  const navigate = useNavigate();
+
+  const [me, setMe] = useState(null);
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -17,6 +22,27 @@ export default function Services() {
   const [error, setError] = useState("");
   const [services, setServices] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      try {
+        const data = await apiFetch("/api/auth/me");
+        if (!cancelled) setMe(data.user);
+      } catch {
+      }
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function logout() {
+    clearToken();
+    setMe(null);
+    navigate("/login", { replace: true });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -50,12 +76,32 @@ export default function Services() {
         <div className="row space">
           <h1>Find Services</h1>
           <div className="row">
-            <Link className="btn secondary" to="/register">
-              Register
-            </Link>
-            <Link className="btn secondary" to="/login">
-              Login
-            </Link>
+            {me ? (
+              <>
+                {me.role === "provider" ? (
+                  <Link className="btn secondary" to="/provider/services">
+                    Provider
+                  </Link>
+                ) : null}
+                {me.role === "admin" ? (
+                  <Link className="btn secondary" to="/admin/users">
+                    Admin
+                  </Link>
+                ) : null}
+                <button className="btn secondary" type="button" onClick={logout}>
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link className="btn secondary" to="/register">
+                  Register
+                </Link>
+                <Link className="btn secondary" to="/login">
+                  Login
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -106,7 +152,7 @@ export default function Services() {
               ) : services.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="muted">
-                    No services found
+                    No services found. Create a provider account and add a service from Provider dashboard.
                   </td>
                 </tr>
               ) : (
