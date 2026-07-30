@@ -102,7 +102,7 @@ export default function AdminUsers() {
         <div className="card stack">
           <h1>Admin User Management</h1>
           <div className="error">{meError}</div>
-          <Link className="btn" to="/login">
+          <Link className="btn" to="/login" state={{ redirectTo: "/admin/users" }}>
             Go to login
           </Link>
         </div>

@@ -37,6 +37,44 @@ bookingsRouter.get("/availability", async (req, res) => {
   });
 });
 
+bookingsRouter.get("/mine", requireAuth, requireRole(["resident"]), async (req, res) => {
+  const bookings = await Booking.find({ resident: req.user._id })
+    .sort({ startAt: -1 })
+    .populate("provider", "name email")
+    .populate("service", "title");
+
+  res.json({
+    bookings: bookings.map((b) => ({
+      id: b._id,
+      provider: b.provider ? { id: b.provider._id, name: b.provider.name, email: b.provider.email } : null,
+      service: b.service ? { id: b.service._id, title: b.service.title } : null,
+      startAt: b.startAt,
+      durationMinutes: b.durationMinutes,
+      status: b.status,
+      createdAt: b.createdAt
+    }))
+  });
+});
+
+bookingsRouter.get("/provider", requireAuth, requireRole(["provider"]), async (req, res) => {
+  const bookings = await Booking.find({ provider: req.user._id })
+    .sort({ startAt: -1 })
+    .populate("resident", "name email")
+    .populate("service", "title");
+
+  res.json({
+    bookings: bookings.map((b) => ({
+      id: b._id,
+      resident: b.resident ? { id: b.resident._id, name: b.resident.name, email: b.resident.email } : null,
+      service: b.service ? { id: b.service._id, title: b.service.title } : null,
+      startAt: b.startAt,
+      durationMinutes: b.durationMinutes,
+      status: b.status,
+      createdAt: b.createdAt
+    }))
+  });
+});
+
 bookingsRouter.post("/", requireAuth, requireRole(["resident"]), async (req, res) => {
   const { providerId, serviceId, startAt, durationMinutes } = req.body ?? {};
   if (!providerId || !startAt) return res.status(400).json({ message: "providerId and startAt are required" });
@@ -89,4 +127,3 @@ bookingsRouter.post("/", requireAuth, requireRole(["resident"]), async (req, res
     }
   });
 });
-

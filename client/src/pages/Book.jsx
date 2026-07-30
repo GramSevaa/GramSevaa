@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import { clearToken } from "../lib/auth";
 
@@ -29,6 +29,7 @@ function slotList() {
 
 export default function Book() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [params] = useSearchParams();
 
   const presetProviderId = params.get("providerId") || "";
@@ -145,6 +146,7 @@ export default function Book() {
         body: JSON.stringify({ providerId, serviceId: presetServiceId || undefined, startAt: startAtIso, durationMinutes: 60 })
       });
       setSuccess(data.booking);
+      navigate("/resident/bookings", { replace: true, state: { message: "Booking submitted" } });
     } catch (err) {
       setError(err.message || "Booking failed");
     } finally {
@@ -167,7 +169,7 @@ export default function Book() {
           <h1>Book a Service</h1>
           <div className="error">{meError}</div>
           <div className="row">
-            <Link className="btn" to="/login">
+            <Link className="btn" to="/login" state={{ redirectTo: `${location.pathname}${location.search}` }}>
               Login
             </Link>
             <Link className="btn secondary" to="/register">

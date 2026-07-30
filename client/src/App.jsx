@@ -5,6 +5,7 @@ import AdminUsers from "./pages/AdminUsers";
 import Login from "./pages/Login";
 import ProviderProfile from "./pages/ProviderProfile";
 import ProviderServices from "./pages/ProviderServices";
+import ResidentBookings from "./pages/ResidentBookings";
 import Register from "./pages/Register";
 import Services from "./pages/Services";
 import Book from "./pages/Book";
@@ -19,6 +20,7 @@ export default function App() {
       <Route path="/book" element={<Book />} />
       <Route path="/providers/:id" element={<ProviderProfile />} />
       <Route path="/provider/services" element={<ProviderServices />} />
+      <Route path="/resident/bookings" element={<ResidentBookings />} />
       <Route path="/admin/users" element={<AdminUsers />} />
       <Route path="/admin/reviews" element={<AdminReviews />} />
       <Route path="*" element={<Navigate to="/" replace />} />

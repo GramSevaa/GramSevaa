@@ -6,7 +6,7 @@ import { setToken } from "../lib/auth";
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectTo = useMemo(() => location.state?.redirectTo || "/services", [location.state]);
+  const redirectTo = useMemo(() => location.state?.redirectTo || "", [location.state]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +23,9 @@ export default function Login() {
         body: JSON.stringify({ email, password })
       });
       setToken(data.token);
-      navigate(redirectTo, { replace: true });
+      const role = data.user?.role;
+      const fallback = role === "admin" ? "/admin/users" : role === "provider" ? "/provider/services" : "/services";
+      navigate(redirectTo || fallback, { replace: true });
     } catch (err) {
       setError(err.message || "Login failed");
     } finally {

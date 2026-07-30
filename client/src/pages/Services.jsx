@@ -83,6 +83,11 @@ export default function Services() {
                     Provider
                   </Link>
                 ) : null}
+                {me.role === "resident" ? (
+                  <Link className="btn secondary" to="/resident/bookings">
+                    My bookings
+                  </Link>
+                ) : null}
                 {me.role === "admin" ? (
                   <Link className="btn secondary" to="/admin/users">
                     Admin

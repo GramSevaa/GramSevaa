@@ -17,6 +17,10 @@ export default function ProviderServices() {
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [notificationsError, setNotificationsError] = useState("");
 
+  const [bookings, setBookings] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
+  const [bookingsError, setBookingsError] = useState("");
+
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -63,6 +67,19 @@ export default function ProviderServices() {
     }
   }
 
+  async function loadBookings() {
+    setLoadingBookings(true);
+    setBookingsError("");
+    try {
+      const data = await apiFetch("/api/bookings/provider");
+      setBookings(data.bookings || []);
+    } catch (err) {
+      setBookingsError(err.message || "Failed to load bookings");
+    } finally {
+      setLoadingBookings(false);
+    }
+  }
+
   async function loadServices() {
     setLoading(true);
     setError("");
@@ -79,6 +96,7 @@ export default function ProviderServices() {
   useEffect(() => {
     if (!me || me.role !== "provider") return;
     loadNotifications();
+    loadBookings();
     loadServices();
   }, [me]);
 
@@ -145,7 +163,7 @@ export default function ProviderServices() {
         <div className="card stack">
           <h1>Provider Services</h1>
           <div className="error">{meError}</div>
-          <Link className="btn" to="/login">
+          <Link className="btn" to="/login" state={{ redirectTo: "/provider/services" }}>
             Go to login
           </Link>
         </div>
@@ -225,6 +243,50 @@ export default function ProviderServices() {
                           View
                         </button>
                       </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="stack">
+          <div className="row space">
+            <div className="muted small">Bookings</div>
+            <button className="btn secondary" type="button" onClick={loadBookings} disabled={loadingBookings}>
+              {loadingBookings ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+
+          {bookingsError ? <div className="error">{bookingsError}</div> : null}
+
+          <div className="tableWrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Resident</th>
+                  <th>Service</th>
+                  <th>When</th>
+                  <th>Duration</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="muted">
+                      No bookings yet
+                    </td>
+                  </tr>
+                ) : (
+                  bookings.map((b) => (
+                    <tr key={b.id}>
+                      <td>{b.resident?.name || b.resident?.email || "—"}</td>
+                      <td>{b.service?.title || "—"}</td>
+                      <td>{b.startAt ? new Date(b.startAt).toLocaleString() : "—"}</td>
+                      <td>{b.durationMinutes ? `${b.durationMinutes} min` : "—"}</td>
+                      <td>{b.status}</td>
                     </tr>
                   ))
                 )}

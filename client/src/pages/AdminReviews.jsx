@@ -115,7 +115,7 @@ export default function AdminReviews() {
         <div className="card stack">
           <h1>Admin Review Moderation</h1>
           <div className="error">{meError}</div>
-          <Link className="btn" to="/login">
+          <Link className="btn" to="/login" state={{ redirectTo: "/admin/reviews" }}>
             Go to login
           </Link>
         </div>
@@ -287,4 +287,3 @@ export default function AdminReviews() {
     </div>
   );
 }
-
